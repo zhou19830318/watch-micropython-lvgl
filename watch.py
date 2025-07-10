@@ -37,8 +37,8 @@ weather_dict = {'0@1x.png':'Sunny','1@1x.png':'Clear','2@1x.png':'Fair',
                 '33@1x.png':'Blustery','34@1x.png':'Hurricane','35@1x.png':'Tropical Storm',
                 '36@1x.png':'Tornado','37@1x.png':'Cold','38@1x.png':'Hot',
                 '99@1x.png':'Unknown'}
-
-weather_url = f"https://api.seniverse.com/v3/weather/now.json?key=S9hoa4Wza9Hcs2uX_&location={city}&language=en&unit=c"
+# Replace with your key from https://www.seniverse.com/
+weather_url = f"https://api.seniverse.com/v3/weather/now.json?key=xxx&location={city}&language=en&unit=c"
 
 # Global variables for tracking previous time state
 prev_seconds = -1
