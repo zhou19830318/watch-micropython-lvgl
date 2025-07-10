@@ -20,9 +20,9 @@ import gc9a01
 # Initialize WiFi
 sta_if = network.WLAN(network.STA_IF)
 sta_if.active(False)
-SSID = "Prefoco"  # Replace with your WiFi SSID
-PASSWORD = "18961210318"  # Replace with your WiFi Password
-city = "changzhou"
+SSID = "xxx"  # Replace with your WiFi SSID
+PASSWORD = "xxx"  # Replace with your WiFi Password
+city = "changzhou" # Replace with your city
 weather_dict = {'0@1x.png':'Sunny','1@1x.png':'Clear','2@1x.png':'Fair',
                 '3@1x.png':'Fair','4@1x.png':'Cloudy','5@1x.png':'Partly Cloudy',
                 '6@1x.png':'Partly Cloudy','7@1x.png':'Mostly Cloudy','8@1x.png':'Mostly Cloudy',
