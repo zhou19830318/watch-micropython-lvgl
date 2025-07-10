@@ -1,3 +1,4 @@
+![视频演示](https://github.com/zhou19830318/watch-micropython-lvgl/blob/main/0268c58e8d72c3bb1a3dd32d673856ec.mp4)
 # ESP32-S3 Smartwatch Display Project
 
 This project creates a vibrant and functional smartwatch interface using the **ESP32-S3** microcontroller and the **GC9A01** 240x240 circular TFT display. Powered by **MicroPython** and **LVGL (Light and Versatile Graphics Library)**, it features a smooth analog clock, digital time/date display, and real-time weather updates fetched via Wi-Fi. Perfect for hobbyists and developers looking to build a custom wearable device!
