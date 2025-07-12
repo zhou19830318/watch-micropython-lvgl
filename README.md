@@ -118,3 +118,4 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 - **ESP32-S3 & GC9A01**: For being the perfect hardware combo for this project.
 
 Happy tinkering, and enjoy your custom smartwatch display!
+
