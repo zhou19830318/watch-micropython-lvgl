@@ -1,3 +1,8 @@
+</div>
+<div align="center">
+  <img src="https://github.com/zhou19830318/watch-micropython-lvgl/blob/main/20250710155039.jpg">
+</div>
+
 # 智能手表项目说明文档
 
 ## 项目概述
