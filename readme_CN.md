@@ -1,3 +1,7 @@
+</div>
+<div align="center">
+  <img src="https://github.com/zhou19830318/watch-micropython-lvgl/blob/main/20250710155039.jpg">
+</div>
 # ESP32-S3 智能手表显示项目
 
 该项目使用 **ESP32-S3** 微控制器和 **GC9A01** 240x240 圆形 TFT 显示屏，打造一个生动且功能强大的智能手表界面。项目基于 **MicroPython** 和 **LVGL (Light and Versatile Graphics Library)** 驱动。
