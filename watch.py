@@ -17,6 +17,7 @@ import ntptime
 from machine import Pin, RTC
 import gc9a01
 
+
 # Initialize WiFi
 sta_if = network.WLAN(network.STA_IF)
 sta_if.active(False)
@@ -28,7 +29,7 @@ weather_dict = {'0@1x.png':'Sunny','1@1x.png':'Clear','2@1x.png':'Fair',
                 '6@1x.png':'Partly Cloudy','7@1x.png':'Mostly Cloudy','8@1x.png':'Mostly Cloudy',
                 '9@1x.png':'Overcast','10@1x.png':'Shower','11@1x.png':'Thundershower',
                 '12@1x.png':'Thundershower with Hail','13@1x.png':'Light Rain','14@1x.png':'Moderate Rain',
-                '15@1x.png':'Heavy Rain','16@1x.png':'Storm','17@1x.png':'Heavy Storm',
+                '15@1x.png':'Heavy rain','16@1x.png':'Storm','17@1x.png':'Heavy Storm',
                 '18@1x.png':'Severe Storm','19@1x.png':'Ice Rain','20@1x.png':'Sleet',
                 '21@1x.png':'Snow Flurry','22@1x.png':'Light Snow','23@1x.png':'Moderate Snow',
                 '24@1x.png':'Heavy Snow','25@1x.png':'Snowstorm','26@1x.png':'Dust',
@@ -37,6 +38,20 @@ weather_dict = {'0@1x.png':'Sunny','1@1x.png':'Clear','2@1x.png':'Fair',
                 '33@1x.png':'Blustery','34@1x.png':'Hurricane','35@1x.png':'Tropical Storm',
                 '36@1x.png':'Tornado','37@1x.png':'Cold','38@1x.png':'Hot',
                 '99@1x.png':'Unknown'}
+weather_Zh = {'Sunny':'晴','Clear':'晴','Fair':'晴',
+              'Fair':'晴','Cloudy':'多云','Partly Cloudy':'晴间多云',
+              'Partly Cloudy':'晴间多云','Mostly Cloudy':'大部多云','Mostly Cloudy':'大部多云',
+              'Overcast':'阴','Shower':'阵雨','Thundershower':'雷阵雨',
+              'Thundershower with Hail':'雷阵雨伴有冰雹','Light Rain':'小雨','Moderate Rain':'中雨',
+              'Heavy rain':'大雨','Storm':'暴雨','Heavy Storm':'大暴雨',
+              'Severe Storm':'特大暴雨','Ice Rain':'冻雨','Sleet':'雨夹雪',
+              'Snow Flurry':'阵雪','Light Snow':'小雪','Moderate Snow':'中雪',
+              'Heavy Snow':'大雪','Snowstorm':'暴雪','Dust':'浮尘',
+              'Sand':'扬沙','Duststorm':'沙尘暴','Sandstorm':'强沙尘暴',
+              'Foggy':'雾','Haze':'霾','Windy':'风',
+              'Blustery':'大风','Hurricane':'飓风','Tropical Storm':'热带风暴',
+              'Tornado':'龙卷风','Cold':'冷','Hot':'热',
+              'Unknown':'未知'}
 
 weather_url = f"https://api.seniverse.com/v3/weather/now.json?key=S9hoa4Wza9Hcs2uX_&location={city}&language=en&unit=c"
 
@@ -80,7 +95,7 @@ display = init_display()
 display.set_power(False)
 display.init()
 display.set_color_inversion(True)
-display.set_rotation(lv.DISPLAY_ROTATION._90)
+display.set_rotation(lv.DISPLAY_ROTATION._0)
 display.set_backlight(100)
 
 # Initialize RTC
@@ -366,27 +381,23 @@ def update_weather(e):
         if weather_data:
             try:
                 weather_json = json.loads(weather_data)
-                wheather = weather_json["results"][0]["now"]["text"]
+                weather = weather_json["results"][0]["now"]["text"]
                 temp = weather_json["results"][0]["now"]["temperature"]
-                weather_image_keys = find_keys_by_value(weather_dict, wheather)
+                weather_image_keys = find_keys_by_value(weather_dict, weather)
                 weather_image_key = weather_image_keys[0] if weather_image_keys else '99@1x.png'
+                weather_Zh_key = weather_Zh.get(weather, '未知')
                 
-                # Update temperature label
                 ui_label.set_text(f"{temp}°C")
-                # Update weather label
-                ui_label5.set_text(wheather)
+                ui_label5.set_text(weather_Zh_key)
                 
-                # Update weather image
                 try:
                     with open(f'weather_incons/{weather_image_key}', 'rb') as f:
                         png_data = f.read()
-                    img_cogwheel_argb = lv.image_dsc_t({
-                        'data_size': len(png_data),
-                        'data': png_data
-                    })
-                    img1.set_src(img_cogwheel_argb)
+                    img_cogwheel = lv.image_dsc_t({'data_size': len(png_data), 'data': png_data})
+                    img1.set_src(img_cogwheel)
                 except Exception as e:
                     print(f"Could not load weather icon {weather_image_key}: {e}")
+                    ui_label.set_text("Icon Load Error")
             except Exception as e:
                 print(f"Weather JSON parse error: {e}")
                 ui_label.set_text("Weather Parse Error")
@@ -417,21 +428,18 @@ SetFlag(ui_qrcode, lv.obj.FLAG.SCROLLABLE, False)
 
 # Create an image from the png file
 weather_data = fetchWeather()
+temp, weather, weather_image_key, weather_Zh_key = "N/A", "Unknown", '99@1x.png', "未知"
 if weather_data:
     try:
         weather_json = json.loads(weather_data)
-        wheather = weather_json["results"][0]["now"]["text"]
+        weather = weather_json["results"][0]["now"]["text"]
         temp = weather_json["results"][0]["now"]["temperature"]
-        weather_image_keys = find_keys_by_value(weather_dict, wheather)
+        weather_image_keys = find_keys_by_value(weather_dict, weather)
         weather_image_key = weather_image_keys[0] if weather_image_keys else '99@1x.png'
-    except:
-        weather_image_key = '99@1x.png'
-        temp = "N/A"
-        wheather = "Unknown"
-else:
-    weather_image_key = '99@1x.png'
-    temp = "N/A"
-    wheather = "Unknown"
+        weather_Zh_key = weather_Zh.get(weather, '未知')
+        print(weather_Zh_key)
+    except Exception as e:
+        print(f"Initial weather JSON parse error: {e}")
 
 # Hour Hand (shortest and thickest)
 ui_HourHand = lv.line(ui_time)
@@ -478,7 +486,7 @@ except:
 img1 = lv.image(ui_weather)
 if img_cogwheel_argb:
     img1.set_src(img_cogwheel_argb)
-img1.align(lv.ALIGN.CENTER, 0, -70)
+img1.align(lv.ALIGN.CENTER, 0, -20)
 img1.set_size(58, 58)
 
 
@@ -551,21 +559,36 @@ ui_Button1.set_width(100)
 ui_Button1.set_height(40)
 ui_Button1.set_align(lv.ALIGN.BOTTOM_MID)
 ui_Label4 = lv.label(ui_Button1)
-ui_Label4.set_text(f"{city}")
+ui_Label4.set_text("常州")
 ui_Label4.set_align(lv.ALIGN.CENTER)
 ui_Button1.add_event_cb(sync_ntp_time, lv.EVENT.CLICKED, None)
+
+fs_drv = lv.fs_drv_t()
+fs_driver.fs_register(fs_drv, 'S')
+
+try:
+    ltr_label.set_style_text_font(ltr_label, lv.font_montserrat_16, 0)
+except:
+    myfont = lv.binfont_create("S:myfont_18.bin")
+    ui_Label4.set_style_text_font(myfont, 0)
 
 # Create temp on the screen
 ui_label = lv.label(ui_weather)
 ui_label.set_text(f"{temp}°C")
 ui_label.set_style_text_color(lv.color_hex(0x00FF00), 0)
-ui_label.align(lv.ALIGN.CENTER, 0, -15)
+ui_label.align(lv.ALIGN.CENTER, 0, 30)
 
 # Create weather on the screen
 ui_label5 = lv.label(ui_weather)
-ui_label5.set_text(wheather)
+ui_label5.set_text(weather_Zh_key)
 ui_label5.set_style_text_color(lv.color_hex(0xFFFF00), 0)
-ui_label5.align(lv.ALIGN.CENTER, 0, -35)
+ui_label5.align(lv.ALIGN.CENTER, 0, 10)
+
+try:
+    ltr_label.set_style_text_font(ltr_label, lv.font_montserrat_16, 0)
+except:
+    myfont = lv.binfont_create("S:myfont_18.bin")
+    ui_label5.set_style_text_font(myfont, 0)
 
 bg_color = lv.palette_lighten(lv.PALETTE.LIGHT_BLUE, 5)
 fg_color = lv.palette_darken(lv.PALETTE.BLUE, 4)
