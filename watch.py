@@ -102,7 +102,7 @@ display.set_backlight(100)
 rtc = RTC()
 
 scr = lv.screen_active()
-scr.set_style_bg_color(lv.color_hex(0xFFFFFF), 0)  # Black background
+scr.set_style_bg_color(lv.color_hex(0x000000), 0)  # Black background
 '''
 dispp = lv.display_get_default()
 theme = lv.theme_default_init(dispp, lv.palette_main(lv.PALETTE.BLUE), lv.palette_main(lv.PALETTE.RED), False, lv.font_default())
@@ -414,15 +414,19 @@ connect_wifi()
 ui____initial_actions0 = lv.obj()
 
 ui_time = lv.obj()
+ui_time.set_style_bg_color(lv.color_hex(0xFFFFFF), 0)  # Black background
 SetFlag(ui_time, lv.obj.FLAG.SCROLLABLE, False)
 
 ui_weather = lv.obj()
+ui_weather.set_style_bg_color(lv.color_hex(0x000000), 0)  # Black background
 SetFlag(ui_weather, lv.obj.FLAG.SCROLLABLE, False)
 
 ui_date = lv.obj()
+ui_date.set_style_bg_color(lv.color_hex(0xFFFFFF), 0)  # Black background
 SetFlag(ui_date, lv.obj.FLAG.SCROLLABLE, False)
 
 ui_qrcode = lv.obj()
+ui_qrcode.set_style_bg_color(lv.color_hex(0xFFFFFF), 0)  # Black background
 SetFlag(ui_qrcode, lv.obj.FLAG.SCROLLABLE, False)
 
 
@@ -442,6 +446,47 @@ if weather_data:
         print(f"Initial weather JSON parse error: {e}")
 
 # Hour Hand (shortest and thickest)
+
+ui_clock12 = lv.label(ui_time)
+ui_clock12.set_text("12")
+ui_clock12.set_width(lv.SIZE_CONTENT)	# 1
+ui_clock12.set_height(lv.SIZE_CONTENT)   # 1
+ui_clock12.set_x(0)
+ui_clock12.set_y(-90)
+ui_clock12.set_align( lv.ALIGN.CENTER)
+ui_clock12.set_style_text_font( lv.font_montserrat_16, lv.PART.MAIN | lv.STATE.DEFAULT )
+ui_clock12.set_style_text_color(lv.color_hex(0x000000), lv.PART.MAIN | lv.STATE.DEFAULT)
+
+ui_clock6 = lv.label(ui_time)
+ui_clock6.set_text("6")
+ui_clock6.set_width(lv.SIZE_CONTENT)	# 1
+ui_clock6.set_height(lv.SIZE_CONTENT)   # 1
+ui_clock6.set_x(0)
+ui_clock6.set_y(90)
+ui_clock6.set_align( lv.ALIGN.CENTER)
+ui_clock6.set_style_text_font( lv.font_montserrat_16, lv.PART.MAIN | lv.STATE.DEFAULT )
+ui_clock6.set_style_text_color(lv.color_hex(0x000000), lv.PART.MAIN | lv.STATE.DEFAULT)
+
+ui_clock3 = lv.label(ui_time)
+ui_clock3.set_text("3")
+ui_clock3.set_width(lv.SIZE_CONTENT)	# 1
+ui_clock3.set_height(lv.SIZE_CONTENT)   # 1
+ui_clock3.set_x(90)
+ui_clock3.set_y(0)
+ui_clock3.set_align( lv.ALIGN.CENTER)
+ui_clock3.set_style_text_font( lv.font_montserrat_16, lv.PART.MAIN | lv.STATE.DEFAULT )
+ui_clock3.set_style_text_color(lv.color_hex(0x000000), lv.PART.MAIN | lv.STATE.DEFAULT)
+
+ui_clock9 = lv.label(ui_time)
+ui_clock9.set_text("9")
+ui_clock9.set_width(lv.SIZE_CONTENT)	# 1
+ui_clock9.set_height(lv.SIZE_CONTENT)   # 1
+ui_clock9.set_x(-90)
+ui_clock9.set_y(0)
+ui_clock9.set_align( lv.ALIGN.CENTER)
+ui_clock9.set_style_text_font( lv.font_montserrat_16, lv.PART.MAIN | lv.STATE.DEFAULT )
+ui_clock9.set_style_text_color(lv.color_hex(0x000000), lv.PART.MAIN | lv.STATE.DEFAULT)
+
 ui_HourHand = lv.line(ui_time)
 ui_HourHand.set_points([{"x": 120, "y": 120}, {"x": 120, "y": 60}], 1)
 ui_HourHand.set_style_line_color(lv.color_hex(0x800080), lv.PART.MAIN | lv.STATE.DEFAULT)
@@ -466,7 +511,7 @@ ui_SecondHand.set_style_line_rounded(True, lv.PART.MAIN | lv.STATE.DEFAULT)
 ui_CenterDot = lv.obj(ui_time)
 ui_CenterDot.set_size(8, 8)
 ui_CenterDot.set_pos(116, 116)  # Center at (120, 120) with 4px offset for 8px circle
-ui_CenterDot.set_style_bg_color(lv.color_hex(0xFFFFFF), lv.PART.MAIN | lv.STATE.DEFAULT)
+ui_CenterDot.set_style_bg_color(lv.color_hex(0x000000), lv.PART.MAIN | lv.STATE.DEFAULT)
 ui_CenterDot.set_style_border_width(0, lv.PART.MAIN | lv.STATE.DEFAULT)
 ui_CenterDot.set_style_radius(4, lv.PART.MAIN | lv.STATE.DEFAULT)
 SetFlag(ui_CenterDot, lv.obj.FLAG.SCROLLABLE, False)
@@ -486,7 +531,7 @@ except:
 img1 = lv.image(ui_weather)
 if img_cogwheel_argb:
     img1.set_src(img_cogwheel_argb)
-img1.align(lv.ALIGN.CENTER, 0, -20)
+img1.align(lv.ALIGN.CENTER, 0, -25)
 img1.set_size(58, 58)
 
 
@@ -527,7 +572,7 @@ for i in range(60):
     mark = lv.line(ui_time)
     mark.set_points([{"x": int(inner_x), "y": int(inner_y)}, 
                     {"x": int(outer_x), "y": int(outer_y)}], 2)
-    mark.set_style_line_color(lv.color_hex(0xFFFFFF), lv.PART.MAIN | lv.STATE.DEFAULT)
+    mark.set_style_line_color(lv.color_hex(0x000000), lv.PART.MAIN | lv.STATE.DEFAULT)
     mark.set_style_line_width(line_width, lv.PART.MAIN | lv.STATE.DEFAULT)
 
 ui_Label2 = lv.label(ui_date)
@@ -552,6 +597,19 @@ ui_Label3.set_style_text_color(lv.color_hex(0xFFFF00), lv.PART.MAIN | lv.STATE.D
 ui_Label3.set_style_text_opa(255, lv.PART.MAIN | lv.STATE.DEFAULT)
 ui_Label3.set_style_text_font(lv.font_montserrat_16, lv.PART.MAIN | lv.STATE.DEFAULT)
 
+
+ui_MinuteHand1 = lv.spinner(ui_weather)
+#ui_MinuteHand.set_anim_params(1000,90)
+ui_MinuteHand1.set_width(240)
+ui_MinuteHand1.set_height(240)
+ui_MinuteHand1.set_align( lv.ALIGN.CENTER)
+ui_MinuteHand1.set_style_arc_color(lv.color_hex(0xDDA3F8), lv.PART.MAIN | lv.STATE.DEFAULT )
+ui_MinuteHand1.set_style_arc_opa(255, lv.PART.MAIN| lv.STATE.DEFAULT )
+ui_MinuteHand1.set_style_arc_width( 5, lv.PART.MAIN | lv.STATE.DEFAULT )
+
+ui_MinuteHand1.set_style_arc_color(lv.color_hex(0xAD04FB), lv.PART.INDICATOR | lv.STATE.DEFAULT )
+ui_MinuteHand1.set_style_arc_opa(255, lv.PART.INDICATOR| lv.STATE.DEFAULT )
+ui_MinuteHand1.set_style_arc_width( 5, lv.PART.INDICATOR | lv.STATE.DEFAULT )
 
 # NTP Sync Button
 ui_Button1 = lv.button(ui_weather)
