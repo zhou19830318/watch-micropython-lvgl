@@ -316,11 +316,8 @@ def update_second_hand(seconds):
     center_x, center_y = 120, 120
     
     # Calculate start point slightly inside the arc
-    start_radius = clock_radius - 15
-    start_x = center_x + start_radius * math.sin(angle_rad)
-    start_y = center_y - start_radius * math.cos(angle_rad)
-    
-    # Calculate end point at the edge of the arc
+    start_x = center_x + 20 * math.sin(angle_rad)
+    start_y = center_y - 20 * math.cos(angle_rad)
     end_x = center_x + clock_radius * math.sin(angle_rad)
     end_y = center_y - clock_radius * math.cos(angle_rad)
     
