@@ -22,7 +22,7 @@ import gc9a01
 sta_if = network.WLAN(network.STA_IF)
 sta_if.active(False)
 SSID = "xxx"  # Replace with your WiFi SSID
-PASSWORD = "xxxx"  # Replace with your WiFi Password
+PASSWORD = "xxx"  # Replace with your WiFi Password
 city = "changzhou"
 '''
 weather_dict = {'0@1x.png':'晴','1@1x.png':'晴','2@1x.png':'晴',
@@ -90,7 +90,7 @@ display.set_backlight(100)
 rtc = RTC()
 
 scr = lv.screen_active()
-scr.set_style_bg_color(lv.color_hex(0x000000), 0)  # Black background
+scr.set_style_bg_color(lv.color_hex(0xFFFFFF), 0)  # Black background
 '''
 dispp = lv.display_get_default()
 theme = lv.theme_default_init(dispp, lv.palette_main(lv.PALETTE.BLUE), lv.palette_main(lv.PALETTE.RED), False, lv.font_default())
@@ -298,14 +298,14 @@ def update_clock():
             ui_Label3.set_text(date_str)
 
 def update_second_hand(seconds):
+
     angle_deg = seconds * 6  # 6 degrees per second
     angle_rad = math.radians(angle_deg)
     clock_radius = 100
     center_x, center_y = 120, 120
     
-    # Calculate start point slightly inside the arc
-    start_x = center_x + 20 * math.sin(angle_rad)
-    start_y = center_y - 20 * math.cos(angle_rad)
+    start_x = center_x + (clock_radius - 15) * math.sin(angle_rad)
+    start_y = center_y - (clock_radius - 15) * math.cos(angle_rad)
     end_x = center_x + clock_radius * math.sin(angle_rad)
     end_y = center_y - clock_radius * math.cos(angle_rad)
     
@@ -397,7 +397,7 @@ connect_wifi()
 ui____initial_actions0 = lv.obj()
 
 ui_time = lv.obj()
-ui_time.set_style_bg_color(lv.color_hex(0xFFFFFF), 0)  # Black background
+ui_time.set_style_bg_color(lv.color_hex(0x000000), 0)  # Black background
 SetFlag(ui_time, lv.obj.FLAG.SCROLLABLE, False)
 
 ui_weather = lv.obj()
@@ -405,11 +405,11 @@ ui_weather.set_style_bg_color(lv.color_hex(0x000000), 0)  # Black background
 SetFlag(ui_weather, lv.obj.FLAG.SCROLLABLE, False)
 
 ui_date = lv.obj()
-ui_date.set_style_bg_color(lv.color_hex(0xFFFFFF), 0)  # Black background
+ui_date.set_style_bg_color(lv.color_hex(0x000000), 0)  # Black background
 SetFlag(ui_date, lv.obj.FLAG.SCROLLABLE, False)
 
 ui_qrcode = lv.obj()
-ui_qrcode.set_style_bg_color(lv.color_hex(0xFFFFFF), 0)  # Black background
+ui_qrcode.set_style_bg_color(lv.color_hex(0x000000), 0)  # Black background
 SetFlag(ui_qrcode, lv.obj.FLAG.SCROLLABLE, False)
 
 fs_drv = lv.fs_drv_t()
@@ -439,7 +439,7 @@ ui_clock12.set_x(0)
 ui_clock12.set_y(-90)
 ui_clock12.set_align( lv.ALIGN.CENTER)
 ui_clock12.set_style_text_font( lv.font_montserrat_16, lv.PART.MAIN | lv.STATE.DEFAULT )
-ui_clock12.set_style_text_color(lv.color_hex(0x000000), lv.PART.MAIN | lv.STATE.DEFAULT)
+ui_clock12.set_style_text_color(lv.color_hex(0xFFFFFF), lv.PART.MAIN | lv.STATE.DEFAULT)
 
 ui_clock6 = lv.label(ui_time)
 ui_clock6.set_text("6")
@@ -449,7 +449,7 @@ ui_clock6.set_x(0)
 ui_clock6.set_y(90)
 ui_clock6.set_align( lv.ALIGN.CENTER)
 ui_clock6.set_style_text_font( lv.font_montserrat_16, lv.PART.MAIN | lv.STATE.DEFAULT )
-ui_clock6.set_style_text_color(lv.color_hex(0x000000), lv.PART.MAIN | lv.STATE.DEFAULT)
+ui_clock6.set_style_text_color(lv.color_hex(0xFFFFFF), lv.PART.MAIN | lv.STATE.DEFAULT)
 
 ui_clock3 = lv.label(ui_time)
 ui_clock3.set_text("3")
@@ -459,7 +459,7 @@ ui_clock3.set_x(90)
 ui_clock3.set_y(0)
 ui_clock3.set_align( lv.ALIGN.CENTER)
 ui_clock3.set_style_text_font( lv.font_montserrat_16, lv.PART.MAIN | lv.STATE.DEFAULT )
-ui_clock3.set_style_text_color(lv.color_hex(0x000000), lv.PART.MAIN | lv.STATE.DEFAULT)
+ui_clock3.set_style_text_color(lv.color_hex(0xFFFFFF), lv.PART.MAIN | lv.STATE.DEFAULT)
 
 ui_clock9 = lv.label(ui_time)
 ui_clock9.set_text("9")
@@ -469,7 +469,7 @@ ui_clock9.set_x(-90)
 ui_clock9.set_y(0)
 ui_clock9.set_align( lv.ALIGN.CENTER)
 ui_clock9.set_style_text_font( lv.font_montserrat_16, lv.PART.MAIN | lv.STATE.DEFAULT )
-ui_clock9.set_style_text_color(lv.color_hex(0x000000), lv.PART.MAIN | lv.STATE.DEFAULT)
+ui_clock9.set_style_text_color(lv.color_hex(0xFFFFFF), lv.PART.MAIN | lv.STATE.DEFAULT)
 
 ui_HourHand = lv.line(ui_time)
 ui_HourHand.set_points([{"x": 120, "y": 120}, {"x": 120, "y": 60}], 1)
@@ -495,7 +495,7 @@ ui_SecondHand.set_style_line_rounded(True, lv.PART.MAIN | lv.STATE.DEFAULT)
 ui_CenterDot = lv.obj(ui_time)
 ui_CenterDot.set_size(8, 8)
 ui_CenterDot.set_pos(116, 116)  # Center at (120, 120) with 4px offset for 8px circle
-ui_CenterDot.set_style_bg_color(lv.color_hex(0x000000), lv.PART.MAIN | lv.STATE.DEFAULT)
+ui_CenterDot.set_style_bg_color(lv.color_hex(0xFFFFFF), lv.PART.MAIN | lv.STATE.DEFAULT)
 ui_CenterDot.set_style_border_width(0, lv.PART.MAIN | lv.STATE.DEFAULT)
 ui_CenterDot.set_style_radius(4, lv.PART.MAIN | lv.STATE.DEFAULT)
 SetFlag(ui_CenterDot, lv.obj.FLAG.SCROLLABLE, False)
@@ -556,7 +556,7 @@ for i in range(60):
     mark = lv.line(ui_time)
     mark.set_points([{"x": int(inner_x), "y": int(inner_y)}, 
                     {"x": int(outer_x), "y": int(outer_y)}], 2)
-    mark.set_style_line_color(lv.color_hex(0x000000), lv.PART.MAIN | lv.STATE.DEFAULT)
+    mark.set_style_line_color(lv.color_hex(0xFFFFFF), lv.PART.MAIN | lv.STATE.DEFAULT)
     mark.set_style_line_width(line_width, lv.PART.MAIN | lv.STATE.DEFAULT)
 
 ui_Label2 = lv.label(ui_date)
