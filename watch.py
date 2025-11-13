@@ -7,7 +7,7 @@ import lvgl as lv
 import fs_driver
 from display_driver import init_display
 import task_handler
-import math  # Added for trigonometric calculations
+import math
 import sys
 import urequests
 import json
@@ -17,13 +17,19 @@ import ntptime
 from machine import Pin, RTC
 import gc9a01
 
-
-# Initialize WiFi
-sta_if = network.WLAN(network.STA_IF)
-sta_if.active(False)
-SSID = "xxx"  # Replace with your WiFi SSID
-PASSWORD = "xxx"  # Replace with your WiFi Password
+# ===== CONFIGURATION =====
+SSID = "xxx"
+PASSWORD = "xxx" 
 city = "changzhou"
+weather_url = f"https://api.seniverse.com/v3/weather/now.json?key=S9hoa4Wza9Hcs2uX_&location={city}&language=zh-Hans&unit=c"
+
+# ===== GLOBAL VARIABLES =====
+sta_if = network.WLAN(network.STA_IF)
+prev_seconds = prev_minutes = prev_hours = -1
+current_screen_idx = 0
+screens = []
+
+# ===== WEATHER DICTIONARY (commented out as not used) =====
 '''
 weather_dict = {'0@1x.png':'晴','1@1x.png':'晴','2@1x.png':'晴',
               '3@1x.png':'晴','4@1x.png':'多云','5@1x.png':'晴间多云',
@@ -40,25 +46,8 @@ weather_dict = {'0@1x.png':'晴','1@1x.png':'晴','2@1x.png':'晴',
               '36@1x.png':'龙卷风','37@1x.png':'冷','38@1x.png':'热',
               '99@1x.png':'未知'}
 '''
-weather_url = f"https://api.seniverse.com/v3/weather/now.json?key=S9hoa4Wza9Hcs2uX_&location={city}&language=zh-Hans&unit=c"
 
-# Global variables for tracking previous time state
-prev_seconds = -1
-prev_minutes = -1
-prev_hours = -1
-'''
-def find_keys_by_value(my_dict, target_value):
-    return [key for key, value in my_dict.items() if value == target_value]
-'''
-def fetchWeather():
-    try:
-        result = urequests.get(weather_url)
-        print(result.text)
-        return result.text
-    except Exception as e:
-        print("Weather fetch error:", e)
-        return None
-
+# ===== NETWORK FUNCTIONS =====
 def connect_wifi():
     if not sta_if.isconnected():
         print("Connecting to WiFi...")
@@ -75,234 +64,51 @@ def connect_wifi():
         return False
     return True
 
-# Initialize LVGL
-lv.init()
+def fetch_weather():
+    try:
+        result = urequests.get(weather_url)
+        print(result.text)
+        return result.text
+    except Exception as e:
+        print("Weather fetch error:", e)
+        return None
 
-# Initialize display using the driver module
-display = init_display()
-display.set_power(False)
-display.init()
-display.set_color_inversion(True)
-display.set_rotation(lv.DISPLAY_ROTATION._0)
-display.set_backlight(100)
-
-# Initialize RTC
-rtc = RTC()
-
-scr = lv.screen_active()
-scr.set_style_bg_color(lv.color_hex(0xFFFFFF), 0)  # Black background
-'''
-dispp = lv.display_get_default()
-theme = lv.theme_default_init(dispp, lv.palette_main(lv.PALETTE.BLUE), lv.palette_main(lv.PALETTE.RED), False, lv.font_default())
-dispp.set_theme(theme)
-'''
-def ui_theme_set(idx):
-   return
-
-def SetFlag( obj, flag, value):
-    if (value):
-        obj.add_flag(flag)
-    else:
-        obj.remove_flag(flag)
-    return
-
-_ui_comp_table = {}
-_ui_comp_prev = None
-_ui_name_prev = None
-_ui_child_prev = None
-_ui_comp_table.clear()
-
-def _ui_comp_del_event(e):
-    target = e.get_target()
-    _ui_comp_table[id(target)].remove()
-
-def ui_comp_get_child(comp, child_name):
-    return _ui_comp_table[id(comp)][child_name]
-
-def ui_comp_get_root_from_child(child, compname):
-    for component in _ui_comp_table:
-        if _ui_comp_table[component]["_CompName"]==compname:
-            for part in _ui_comp_table[component]:
-                if id(_ui_comp_table[component][part]) == id(child):
-                    return _ui_comp_table[component]
-    return None
-
-def SetBarProperty(target, id, val):
-   if id == 'Value_with_anim': target.set_value(val, lv.ANIM.ON)
-   if id == 'Value': target.set_value(val, lv.ANIM.OFF)
-   return
-
-def SetPanelProperty(target, id, val):
-   if id == 'Position_X': target.set_x(val)
-   if id == 'Position_Y': target.set_y(val)
-   if id == 'Width': target.set_width(val)
-   if id == 'Height': target.set_height(val)
-   return
-
-def SetDropdownProperty(target, id, val):
-   if id == 'Selected':
-      target.set_selected(val)
-   return
-
-def SetImageProperty(target, id, val, val2):
-   if id == 'Image': target.set_src(val)
-   if id == 'Angle': target.set_rotation(val2)
-   if id == 'Zoom': target.set_scale(val2)
-   return
-
-def SetLabelProperty(target, id, val):
-   if id == 'Text': target.set_text(val)
-   return
-
-def SetRollerProperty(target, id, val):
-   if id == 'Selected':
-      target.set_selected(val, lv.ANIM.OFF)
-   if id == 'Selected_with_anim':
-      target.set_selected(val, lv.ANIM.ON)
-   return
-
-def SetSliderProperty(target, id, val):
-   if id == 'Value_with_anim': target.set_value(val, lv.ANIM.ON)
-   if id == 'Value': target.set_value(val, lv.ANIM.OFF)
-   return
-
-def ChangeScreen( src, fademode, speed, delay):
-    print("Change screen to: "+str([name for name in globals() if globals()[name] is src]))
-    lv.screen_load_anim(src, fademode, speed, delay, False)
-    return
-
-def DeleteScreen(src):
-    return
-
-def IncrementArc( trg, val):
-    trg.set_value(trg.get_value()+val)
-    trg.send_event(lv.EVENT.VALUE_CHANGED, None)
-    return
-
-def IncrementBar( trg, val, anim):
-    trg.set_value(trg.get_value()+val,anim)
-    return
-
-def IncrementSlider( trg, val, anim):
-    trg.set_value(trg.get_value()+val,anim)
-    trg.send_event(lv.EVENT.VALUE_CHANGED, None)
-    return
-
-def KeyboardSetTarget( keyboard, textarea):
-    keyboard.set_textarea(textarea)
-    return
-
-def ModifyFlag( obj, flag, value):
-    if (value=="TOGGLE"):
-        if ( obj.has_flag(flag) ):
-            obj.remove_flag(flag)
-        else:
-            obj.add_flag(flag)
-        return
-
-    if (value=="ADD"):
-        obj.add_flag(flag)
-    else:
-        obj.remove_flag(flag)
-    return
-
-def ModifyState( obj, state, value):
-    if (value=="TOGGLE"):
-        if ( obj.has_state(state) ):
-            obj.remove_state(state)
-        else:
-            obj.add_state(state)
-        return
-
-    if (value=="ADD"):
-        obj.add_state(state)
-    else:
-        obj.remove_state(state)
-    return
-
-def TextAreaMoveCursor( trg, val):
-    if val=="UP" : trg.cursor_up()
-    if val=="RIGHT" : trg.cursor_right()
-    if val=="DOWN" : trg.cursor_down()
-    if val=="LEFT" : trg.cursor_left()
-    trg.add_state(lv.STATE.FOCUSED)
-    return
-
-def set_opacity(obj, v):
-    obj.set_style_opa(v, lv.STATE.DEFAULT|lv.PART.MAIN)
-    return
-
-def SetTextValueArc( trg, src, prefix, postfix):
-    trg.set_text(prefix+str(src.get_value())+postfix)
-    return
-
-def SetTextValueSlider( trg, src, prefix, postfix):
-    trg.set_text(prefix+str(src.get_value())+postfix)
-    return
-
-def SetTextValueChecked( trg, src, txton, txtoff):
-    if src.has_state(lv.STATE.CHECKED):
-        trg.set_text(txton)
-    else:
-        trg.set_text(txtoff)
-    return
-
-def StepSpinbox( trg, val):
-    if val==1 : trg.increment()
-    if val==-1 : trg.decrement()
-    trg.send_event(lv.EVENT.VALUE_CHANGED, None)
-    return
-
-def SwitchTheme(val):
-    ui_theme_set(val)
-    return
-
-# --- Clock Update Function ---
+# ===== TIME FUNCTIONS =====
 def update_clock():
     global prev_seconds, prev_minutes, prev_hours
     
     current_time = rtc.datetime()
-    hours = current_time[4]
-    minutes = current_time[5]
-    seconds = current_time[6]
+    hours, minutes, seconds = current_time[4], current_time[5], current_time[6]
     
-    # Only update if time has changed to avoid unnecessary redraws
     time_changed = False
     
     if seconds != prev_seconds:
-        # Update second hand
         update_second_hand(seconds)
         prev_seconds = seconds
         time_changed = True
     
     if minutes != prev_minutes:
-        # Update minute hand
         update_minute_hand(minutes, seconds)
         prev_minutes = minutes
         time_changed = True
     
     if hours != prev_hours:
-        # Update hour hand
         update_hour_hand(hours, minutes)
         prev_hours = hours
         time_changed = True
     
-    # Update digital time display only when needed
     if time_changed:
         time_str = "{:02d}:{:02d}:{:02d}".format(hours, minutes, seconds)
         ui_Label2.set_text(time_str)
         
-        # Update date only once per minute to reduce load
         if seconds == 0:
-            date_str = "{:04d}-{:02d}-{:02d}".format(current_time[0], current_time[1], current_time[2])
+            date_str = "{:02d}/{:02d}/{:02d}".format(current_time[0], current_time[1], current_time[2])
             ui_Label3.set_text(date_str)
 
 def update_second_hand(seconds):
-
-    angle_deg = seconds * 6  # 6 degrees per second
+    angle_deg = seconds * 6
     angle_rad = math.radians(angle_deg)
-    clock_radius = 100
-    center_x, center_y = 120, 120
+    clock_radius, center_x, center_y = 100, 120, 120
     
     start_x = center_x + (clock_radius - 15) * math.sin(angle_rad)
     start_y = center_y - (clock_radius - 15) * math.cos(angle_rad)
@@ -312,12 +118,10 @@ def update_second_hand(seconds):
     ui_SecondHand.set_points([{"x": int(start_x), "y": int(start_y)}, {"x": int(end_x), "y": int(end_y)}], 2)
 
 def update_minute_hand(minutes, seconds):
-    # Include seconds for smooth minute hand movement
     total_minutes = minutes + seconds / 60.0
-    angle_deg = total_minutes * 6  # 6 degrees per minute
+    angle_deg = total_minutes * 6
     angle_rad = math.radians(angle_deg)
-    clock_radius = 85  # Shorter than second hand
-    center_x, center_y = 120, 120
+    clock_radius, center_x, center_y = 85, 120, 120
     
     start_x = center_x + 20 * math.sin(angle_rad)
     start_y = center_y - 20 * math.cos(angle_rad)
@@ -327,13 +131,11 @@ def update_minute_hand(minutes, seconds):
     ui_MinuteHand.set_points([{"x": int(start_x), "y": int(start_y)}, {"x": int(end_x), "y": int(end_y)}], 2)
 
 def update_hour_hand(hours, minutes):
-    # Convert to 12-hour format and include minutes for smooth hour hand movement
     hours_12 = hours % 12
     total_hours = hours_12 + minutes / 60.0
-    angle_deg = total_hours * 30  # 30 degrees per hour
+    angle_deg = total_hours * 30
     angle_rad = math.radians(angle_deg)
-    clock_radius = 60  # Shortest hand
-    center_x, center_y = 120, 120
+    clock_radius, center_x, center_y = 60, 120, 120
     
     start_x = center_x + 15 * math.sin(angle_rad)
     start_y = center_y - 15 * math.cos(angle_rad)
@@ -342,7 +144,6 @@ def update_hour_hand(hours, minutes):
     
     ui_HourHand.set_points([{"x": int(start_x), "y": int(start_y)}, {"x": int(end_x), "y": int(end_y)}], 2)
 
-# --- NTP Sync Function ---
 def sync_ntp_time(e):
     if not sta_if.isconnected():
         ui_Label4.set_text("WiFi not connected")
@@ -352,23 +153,22 @@ def sync_ntp_time(e):
     try:
         ntptime.settime()
         ui_Label4.set_text("Sync OK!")
-        # Reset previous time values to force update
         global prev_seconds, prev_minutes, prev_hours
         prev_seconds = prev_minutes = prev_hours = -1
     except Exception as e:
         ui_Label4.set_text("Sync Failed")
         print("NTP Error:", e)
 
-# --- Weather Update Timer Callback ---
+# ===== WEATHER FUNCTIONS =====
 def update_weather(e):
     if connect_wifi():
-        weather_data = fetchWeather()
+        weather_data = fetch_weather()
         if weather_data:
             try:
                 weather_json = json.loads(weather_data)
                 weather = weather_json["results"][0]["now"]["text"]
                 temp = weather_json["results"][0]["now"]["temperature"]
-                weather_image_keys = f"{weather_json["results"][0]["now"]["code"]}@1x.png"
+                weather_image_keys = f"{weather_json['results'][0]['now']['code']}@1x.png"
                 
                 ui_label.set_text(f"{temp}°C")
                 ui_label5.set_text(weather)
@@ -389,127 +189,153 @@ def update_weather(e):
     else:
         ui_label.set_text("WiFi Not Connected")
 
+# ===== SCREEN MANAGEMENT =====
+def switch_screen():
+    global current_screen_idx
+    current_screen_idx = (current_screen_idx + 1) % len(screens)
+    lv.screen_load(screens[current_screen_idx])
 
-# Connect to WiFi at startup
+def check_button(*args):
+    global last_button_state
+    current_button_state = button.value()
+    if last_button_state == 1 and current_button_state == 0:
+        switch_screen()
+    last_button_state = current_button_state
+
+# ===== UI HELPER FUNCTIONS =====
+def SetFlag(obj, flag, value):
+    if value:
+        obj.add_flag(flag)
+    else:
+        obj.remove_flag(flag)
+
+def create_clock_marks():
+    for i in range(60):
+        angle_deg = i * 6
+        angle_rad = math.radians(angle_deg)
+        center_x, center_y = 120, 120
+        
+        if i % 5 == 0:
+            outer_x = center_x + 120 * math.sin(angle_rad)
+            outer_y = center_y - 120 * math.cos(angle_rad)
+            inner_x = center_x + 100 * math.sin(angle_rad)
+            inner_y = center_y - 100 * math.cos(angle_rad)
+            line_width = 3
+        else:
+            outer_x = center_x + 120 * math.sin(angle_rad)
+            outer_y = center_y - 120 * math.cos(angle_rad)
+            inner_x = center_x + 110 * math.sin(angle_rad)
+            inner_y = center_y - 110 * math.cos(angle_rad)
+            line_width = 1
+        
+        mark = lv.line(ui_time)
+        mark.set_points([{"x": int(inner_x), "y": int(inner_y)}, 
+                        {"x": int(outer_x), "y": int(outer_y)}], 2)
+        mark.set_style_line_color(lv.color_hex(0xFFFFFF), lv.PART.MAIN | lv.STATE.DEFAULT)
+        mark.set_style_line_width(line_width, lv.PART.MAIN | lv.STATE.DEFAULT)
+
+# ===== INITIALIZATION =====
+# Initialize hardware and services
+sta_if.active(False)
 connect_wifi()
 
-# COMPONENTS
-ui____initial_actions0 = lv.obj()
+# Initialize LVGL and display
+lv.init()
+display = init_display()
+display.set_power(False)
+display.init()
+display.set_color_inversion(True)
+display.set_rotation(lv.DISPLAY_ROTATION._0)
+display.set_backlight(100)
 
-ui_time = lv.obj()
-ui_time.set_style_bg_color(lv.color_hex(0x000000), 0)  # Black background
-SetFlag(ui_time, lv.obj.FLAG.SCROLLABLE, False)
+# Initialize RTC
+rtc = RTC()
 
-ui_weather = lv.obj()
-ui_weather.set_style_bg_color(lv.color_hex(0x000000), 0)  # Black background
-SetFlag(ui_weather, lv.obj.FLAG.SCROLLABLE, False)
-
-ui_date = lv.obj()
-ui_date.set_style_bg_color(lv.color_hex(0x000000), 0)  # Black background
-SetFlag(ui_date, lv.obj.FLAG.SCROLLABLE, False)
-
-ui_qrcode = lv.obj()
-ui_qrcode.set_style_bg_color(lv.color_hex(0x000000), 0)  # Black background
-SetFlag(ui_qrcode, lv.obj.FLAG.SCROLLABLE, False)
-
+# Initialize file system and fonts
 fs_drv = lv.fs_drv_t()
 fs_driver.fs_register(fs_drv, 'S')
 myfont = lv.binfont_create("S:myfont_18.bin")
+myfont1 = lv.binfont_create("S:ui_font_FonT2.bin")
 
-# Create an image from the png file
-weather_data = fetchWeather()
-temp, weather, weather_image_keys= "N/A", "Unknown", '99@1x.png'
-if weather_data:
-    try:
-        weather_json = json.loads(weather_data)
-        weather = weather_json["results"][0]["now"]["text"]
-        temp = weather_json["results"][0]["now"]["temperature"]
-        weather_image_keys = f"{weather_json["results"][0]["now"]["code"]}@1x.png"
-        print(weather)
-    except Exception as e:
-        print(f"Initial weather JSON parse error: {e}")
+# ===== UI CREATION =====
+# Create screens
+ui_time = lv.obj()
+ui_weather = lv.obj()
+ui_date = lv.obj()
+ui_qrcode = lv.obj()
 
-# Hour Hand (shortest and thickest)
+# Configure screens
+for screen in [ui_time, ui_weather, ui_date, ui_qrcode]:
+    screen.set_style_bg_color(lv.color_hex(0x000000), 0)
+    SetFlag(screen, lv.obj.FLAG.SCROLLABLE, False)
 
-ui_clock12 = lv.label(ui_time)
-ui_clock12.set_text("12")
-ui_clock12.set_width(lv.SIZE_CONTENT)	# 1
-ui_clock12.set_height(lv.SIZE_CONTENT)   # 1
-ui_clock12.set_x(0)
-ui_clock12.set_y(-90)
-ui_clock12.set_align( lv.ALIGN.CENTER)
-ui_clock12.set_style_text_font( lv.font_montserrat_16, lv.PART.MAIN | lv.STATE.DEFAULT )
-ui_clock12.set_style_text_color(lv.color_hex(0xFFFFFF), lv.PART.MAIN | lv.STATE.DEFAULT)
+screens = [ui_time, ui_weather, ui_date, ui_qrcode]
 
-ui_clock6 = lv.label(ui_time)
-ui_clock6.set_text("6")
-ui_clock6.set_width(lv.SIZE_CONTENT)	# 1
-ui_clock6.set_height(lv.SIZE_CONTENT)   # 1
-ui_clock6.set_x(0)
-ui_clock6.set_y(90)
-ui_clock6.set_align( lv.ALIGN.CENTER)
-ui_clock6.set_style_text_font( lv.font_montserrat_16, lv.PART.MAIN | lv.STATE.DEFAULT )
-ui_clock6.set_style_text_color(lv.color_hex(0xFFFFFF), lv.PART.MAIN | lv.STATE.DEFAULT)
+# Create clock face
+create_clock_marks()
 
-ui_clock3 = lv.label(ui_time)
-ui_clock3.set_text("3")
-ui_clock3.set_width(lv.SIZE_CONTENT)	# 1
-ui_clock3.set_height(lv.SIZE_CONTENT)   # 1
-ui_clock3.set_x(90)
-ui_clock3.set_y(0)
-ui_clock3.set_align( lv.ALIGN.CENTER)
-ui_clock3.set_style_text_font( lv.font_montserrat_16, lv.PART.MAIN | lv.STATE.DEFAULT )
-ui_clock3.set_style_text_color(lv.color_hex(0xFFFFFF), lv.PART.MAIN | lv.STATE.DEFAULT)
+# Clock labels
+clock_labels = [
+    ("12", 0, -90), ("6", 0, 90), 
+    ("3", 90, 0), ("9", -90, 0)
+]
 
-ui_clock9 = lv.label(ui_time)
-ui_clock9.set_text("9")
-ui_clock9.set_width(lv.SIZE_CONTENT)	# 1
-ui_clock9.set_height(lv.SIZE_CONTENT)   # 1
-ui_clock9.set_x(-90)
-ui_clock9.set_y(0)
-ui_clock9.set_align( lv.ALIGN.CENTER)
-ui_clock9.set_style_text_font( lv.font_montserrat_16, lv.PART.MAIN | lv.STATE.DEFAULT )
-ui_clock9.set_style_text_color(lv.color_hex(0xFFFFFF), lv.PART.MAIN | lv.STATE.DEFAULT)
+for text, x, y in clock_labels:
+    label = lv.label(ui_time)
+    label.set_text(text)
+    label.set_size(lv.SIZE_CONTENT, lv.SIZE_CONTENT)
+    label.set_x(x)
+    label.set_y(y)
+    label.set_align(lv.ALIGN.CENTER)
+    label.set_style_text_font(lv.font_montserrat_16, lv.PART.MAIN | lv.STATE.DEFAULT)
+    label.set_style_text_color(lv.color_hex(0xFFFFFF), lv.PART.MAIN | lv.STATE.DEFAULT)
 
+# Clock hands
 ui_HourHand = lv.line(ui_time)
 ui_HourHand.set_points([{"x": 120, "y": 120}, {"x": 120, "y": 60}], 1)
 ui_HourHand.set_style_line_color(lv.color_hex(0x800080), lv.PART.MAIN | lv.STATE.DEFAULT)
 ui_HourHand.set_style_line_width(8, lv.PART.MAIN | lv.STATE.DEFAULT)
 ui_HourHand.set_style_line_rounded(True, lv.PART.MAIN | lv.STATE.DEFAULT)
 
-# Minute Hand (medium length and thickness)
 ui_MinuteHand = lv.line(ui_time)
 ui_MinuteHand.set_points([{"x": 120, "y": 120}, {"x": 120, "y": 35}], 1)
 ui_MinuteHand.set_style_line_color(lv.color_hex(0xFFA500), lv.PART.MAIN | lv.STATE.DEFAULT)
 ui_MinuteHand.set_style_line_width(4, lv.PART.MAIN | lv.STATE.DEFAULT)
 ui_MinuteHand.set_style_line_rounded(True, lv.PART.MAIN | lv.STATE.DEFAULT)
 
-# Second Hand (longest and thinnest)
 ui_SecondHand = lv.line(ui_time)
 ui_SecondHand.set_points([{"x": 120, "y": 120}, {"x": 120, "y": 20}], 1)
 ui_SecondHand.set_style_line_color(lv.color_hex(0x39FF14), lv.PART.MAIN | lv.STATE.DEFAULT)
 ui_SecondHand.set_style_line_width(2, lv.PART.MAIN | lv.STATE.DEFAULT)
 ui_SecondHand.set_style_line_rounded(True, lv.PART.MAIN | lv.STATE.DEFAULT)
 
-# Center dot for clock hands
+# Center dot
 ui_CenterDot = lv.obj(ui_time)
 ui_CenterDot.set_size(8, 8)
-ui_CenterDot.set_pos(116, 116)  # Center at (120, 120) with 4px offset for 8px circle
+ui_CenterDot.set_pos(116, 116)
 ui_CenterDot.set_style_bg_color(lv.color_hex(0xFFFFFF), lv.PART.MAIN | lv.STATE.DEFAULT)
 ui_CenterDot.set_style_border_width(0, lv.PART.MAIN | lv.STATE.DEFAULT)
 ui_CenterDot.set_style_radius(4, lv.PART.MAIN | lv.STATE.DEFAULT)
 SetFlag(ui_CenterDot, lv.obj.FLAG.SCROLLABLE, False)
 
+# Weather UI components
+weather_data = fetch_weather()
+temp, weather, weather_image_keys = "N/A", "Unknown", '99@1x.png'
+if weather_data:
+    try:
+        weather_json = json.loads(weather_data)
+        weather = weather_json["results"][0]["now"]["text"]
+        temp = weather_json["results"][0]["now"]["temperature"]
+        weather_image_keys = f"{weather_json['results'][0]['now']['code']}@1x.png"
+    except Exception as e:
+        print(f"Initial weather JSON parse error: {e}")
+
 try:
     with open(f'weather_incons/{weather_image_keys}', 'rb') as f:
         png_data = f.read()
-    img_cogwheel_argb = lv.image_dsc_t({
-        'data_size': len(png_data),
-        'data': png_data
-    })
+    img_cogwheel_argb = lv.image_dsc_t({'data_size': len(png_data), 'data': png_data})
 except:
     print(f"Could not find weather_incons/{weather_image_keys}")
-    # Create a fallback image or handle the error appropriately
     img_cogwheel_argb = None
 
 img1 = lv.image(ui_weather)
@@ -518,10 +344,8 @@ if img_cogwheel_argb:
 img1.align(lv.ALIGN.CENTER, 0, -25)
 img1.set_size(58, 58)
 
-
 ui_Arc1 = lv.arc(ui_weather)
-ui_Arc1.set_width(240)
-ui_Arc1.set_height(240)
+ui_Arc1.set_size(240, 240)
 ui_Arc1.set_align(lv.ALIGN.CENTER)
 ui_Arc1.set_range(0, 360)
 ui_Arc1.set_value(360)
@@ -529,76 +353,19 @@ ui_Arc1.set_bg_angles(110, 70)
 ui_Arc1.set_style_arc_color(lv.color_hex(0x070707), lv.PART.INDICATOR | lv.STATE.DEFAULT)
 ui_Arc1.set_style_arc_opa(255, lv.PART.INDICATOR | lv.STATE.DEFAULT)
 
-# Add clock markings
-for i in range(60):
-    angle_deg = i * 6  # 6 degrees per minute
-    angle_rad = math.radians(angle_deg)
-    center_x, center_y = 120, 120
-    
-    # Hour marks (every 5 minutes) are longer
-    if i % 5 == 0:
-        # Outer point
-        outer_x = center_x + 120 * math.sin(angle_rad)
-        outer_y = center_y - 120 * math.cos(angle_rad)
-        # Inner point (shorter for hour marks)
-        inner_x = center_x + 100 * math.sin(angle_rad)
-        inner_y = center_y - 100 * math.cos(angle_rad)
-        line_width = 3
-    else:
-        # Minute marks are shorter
-        outer_x = center_x + 120 * math.sin(angle_rad)
-        outer_y = center_y - 120 * math.cos(angle_rad)
-        inner_x = center_x + 110 * math.sin(angle_rad)
-        inner_y = center_y - 110 * math.cos(angle_rad)
-        line_width = 1
-    
-    # Create the line for the mark
-    mark = lv.line(ui_time)
-    mark.set_points([{"x": int(inner_x), "y": int(inner_y)}, 
-                    {"x": int(outer_x), "y": int(outer_y)}], 2)
-    mark.set_style_line_color(lv.color_hex(0xFFFFFF), lv.PART.MAIN | lv.STATE.DEFAULT)
-    mark.set_style_line_width(line_width, lv.PART.MAIN | lv.STATE.DEFAULT)
-
-ui_Label2 = lv.label(ui_date)
-ui_Label2.set_text("12:00:00")  # Initial time
-ui_Label2.set_width(lv.SIZE_CONTENT)
-ui_Label2.set_height(lv.SIZE_CONTENT)
-ui_Label2.set_x(0)
-ui_Label2.set_y(10)
-ui_Label2.set_align(lv.ALIGN.CENTER)
-ui_Label2.set_style_text_color(lv.color_hex(0xFFFF00), lv.PART.MAIN | lv.STATE.DEFAULT)
-ui_Label2.set_style_text_opa(255, lv.PART.MAIN | lv.STATE.DEFAULT)
-ui_Label2.set_style_text_font(myfont, 0)
-
-ui_Label3 = lv.label(ui_date)
-ui_Label3.set_text("2025-07-08")  # Initial date
-ui_Label3.set_width(lv.SIZE_CONTENT)
-ui_Label3.set_height(lv.SIZE_CONTENT)
-ui_Label3.set_x(0)
-ui_Label3.set_y(-10)
-ui_Label3.set_align(lv.ALIGN.CENTER)
-ui_Label3.set_style_text_color(lv.color_hex(0xFFFF00), lv.PART.MAIN | lv.STATE.DEFAULT)
-ui_Label3.set_style_text_opa(255, lv.PART.MAIN | lv.STATE.DEFAULT)
-ui_Label3.set_style_text_font(myfont, 0)
-
-
 ui_MinuteHand1 = lv.spinner(ui_weather)
-#ui_MinuteHand.set_anim_params(1000,90)
-ui_MinuteHand1.set_width(240)
-ui_MinuteHand1.set_height(240)
-ui_MinuteHand1.set_align( lv.ALIGN.CENTER)
-ui_MinuteHand1.set_style_arc_color(lv.color_hex(0xDDA3F8), lv.PART.MAIN | lv.STATE.DEFAULT )
-ui_MinuteHand1.set_style_arc_opa(255, lv.PART.MAIN| lv.STATE.DEFAULT )
-ui_MinuteHand1.set_style_arc_width( 5, lv.PART.MAIN | lv.STATE.DEFAULT )
-
-ui_MinuteHand1.set_style_arc_color(lv.color_hex(0xAD04FB), lv.PART.INDICATOR | lv.STATE.DEFAULT )
-ui_MinuteHand1.set_style_arc_opa(255, lv.PART.INDICATOR| lv.STATE.DEFAULT )
-ui_MinuteHand1.set_style_arc_width( 5, lv.PART.INDICATOR | lv.STATE.DEFAULT )
+ui_MinuteHand1.set_size(240, 240)
+ui_MinuteHand1.set_align(lv.ALIGN.CENTER)
+ui_MinuteHand1.set_style_arc_color(lv.color_hex(0xDDA3F8), lv.PART.MAIN | lv.STATE.DEFAULT)
+ui_MinuteHand1.set_style_arc_opa(255, lv.PART.MAIN| lv.STATE.DEFAULT)
+ui_MinuteHand1.set_style_arc_width(5, lv.PART.MAIN | lv.STATE.DEFAULT)
+ui_MinuteHand1.set_style_arc_color(lv.color_hex(0xAD04FB), lv.PART.INDICATOR | lv.STATE.DEFAULT)
+ui_MinuteHand1.set_style_arc_opa(255, lv.PART.INDICATOR| lv.STATE.DEFAULT)
+ui_MinuteHand1.set_style_arc_width(5, lv.PART.INDICATOR | lv.STATE.DEFAULT)
 
 # NTP Sync Button
 ui_Button1 = lv.button(ui_weather)
-ui_Button1.set_width(100)
-ui_Button1.set_height(40)
+ui_Button1.set_size(100, 40)
 ui_Button1.set_align(lv.ALIGN.BOTTOM_MID)
 ui_Label4 = lv.label(ui_Button1)
 ui_Label4.set_text("常州")
@@ -606,22 +373,39 @@ ui_Label4.set_align(lv.ALIGN.CENTER)
 ui_Button1.add_event_cb(sync_ntp_time, lv.EVENT.CLICKED, None)
 ui_Label4.set_style_text_font(myfont, 0)
 
-
-# Create temp on the screen
+# Weather labels
 ui_label = lv.label(ui_weather)
 ui_label.set_text(f"{temp}°C")
 ui_label.set_style_text_color(lv.color_hex(0x00FF00), 0)
 ui_label.align(lv.ALIGN.CENTER, 0, 30)
 ui_label.set_style_text_font(myfont, 0)
 
-# Create weather on the screen
 ui_label5 = lv.label(ui_weather)
 ui_label5.set_text(weather)
 ui_label5.set_style_text_color(lv.color_hex(0xFFFF00), 0)
 ui_label5.align(lv.ALIGN.CENTER, 0, 10)
 ui_label5.set_style_text_font(myfont, 0)
-    
 
+# Date and time labels
+ui_Label2 = lv.label(ui_date)
+ui_Label2.set_text("12:00:00")
+ui_Label2.set_size(lv.SIZE_CONTENT, lv.SIZE_CONTENT)
+ui_Label2.set_pos(0, 20)
+ui_Label2.set_align(lv.ALIGN.CENTER)
+ui_Label2.set_style_text_color(lv.color_hex(0xFFFF00), lv.PART.MAIN | lv.STATE.DEFAULT)
+ui_Label2.set_style_text_opa(255, lv.PART.MAIN | lv.STATE.DEFAULT)
+ui_Label2.set_style_text_font(myfont1, 0)
+
+ui_Label3 = lv.label(ui_date)
+ui_Label3.set_text("25/07/08")
+ui_Label3.set_size(lv.SIZE_CONTENT, lv.SIZE_CONTENT)
+ui_Label3.set_pos(0, -20)
+ui_Label3.set_align(lv.ALIGN.CENTER)
+ui_Label3.set_style_text_color(lv.color_hex(0xFFFF00), lv.PART.MAIN | lv.STATE.DEFAULT)
+ui_Label3.set_style_text_opa(255, lv.PART.MAIN | lv.STATE.DEFAULT)
+ui_Label3.set_style_text_font(myfont1, 0)
+
+# QR Code
 bg_color = lv.palette_lighten(lv.PALETTE.LIGHT_BLUE, 5)
 fg_color = lv.palette_darken(lv.PALETTE.BLUE, 4)
 
@@ -629,56 +413,29 @@ qr = lv.qrcode(ui_qrcode)
 qr.set_size(150)
 qr.set_dark_color(fg_color)
 qr.set_light_color(bg_color)
-# Set data
 data = "https://lvgl.io"
-qr.update(data,len(data))
+qr.update(data, len(data))
 qr.center()
-# Add a border with bg_color
 qr.set_style_border_color(bg_color, 0)
 qr.set_style_border_width(5, 0)
 
+# ===== SETUP TIMERS AND EVENT HANDLERS =====
 lv.screen_load(ui_time)
 
-
-# --- Create Timers ---
-# Clock update timer - runs every 100ms for smooth updates
+# Create timers
 clock_timer = lv.timer_create(lambda e: update_clock(), 100, None)
-
-# Weather update timer - 3 hours = 10,800,000 milliseconds
 weather_timer = lv.timer_create(update_weather, 10800000, None)
-
-# Run weather update immediately on startup
 update_weather(None)
-
-# Initialize clock display
 update_clock()
 
-
-# Button GPIO7 handling for screen switching
-screens = [ui_time, ui_weather,ui_date,ui_qrcode]
-current_screen_idx = 0
-
-button = Pin(7, Pin.IN, Pin.PULL_UP)  # GPIO7 with pull-up resistor
-
-def switch_screen():
-    global current_screen_idx
-    current_screen_idx = (current_screen_idx + 1) % len(screens)  # 循环切换屏幕
-    lv.screen_load(screens[current_screen_idx])  # 直接加载屏幕，无动画
-
+# Button handling
+button = Pin(7, Pin.IN, Pin.PULL_UP)
 last_button_state = button.value()
-def check_button(*args):  # Accept arbitrary arguments
-    global last_button_state
-    current_button_state = button.value()
-    if last_button_state == 1 and current_button_state == 0:  # Button press (falling edge)
-        switch_screen()
-    last_button_state = current_button_state
 
-# Add button checking to task handler
 th = task_handler.TaskHandler()
-th.add_event_cb(check_button, 50)  # Check button every 50ms
+th.add_event_cb(check_button, 50)
 
-
-# --- Main Loop ---
+# ===== MAIN LOOP =====
 while True:
     lv.tick_inc(5)
     lv.task_handler()
