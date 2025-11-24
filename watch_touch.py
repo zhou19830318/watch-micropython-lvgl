@@ -31,6 +31,8 @@ prev_seconds = prev_minutes = prev_hours = -1
 current_screen_idx = 0
 screens = []
 
+last_swipe_time = 0
+swipe_cooldown = 500  # ms，滑动切换冷却时间
 # ===== WEATHER DICTIONARY (commented out as not used) =====
 '''
 weather_dict = {'0@1x.png':'晴','1@1x.png':'晴','2@1x.png':'晴',
@@ -191,20 +193,28 @@ def update_weather(e):
     else:
         ui_label.set_text("WiFi Not Connected")
 
-# ===== SCREEN MANAGEMENT =====
-def switch_screen():
+
+
+def switch_screen(direction):
     global current_screen_idx
-    current_screen_idx = (current_screen_idx + 1) % len(screens)
+    if direction == "next":
+        current_screen_idx = (current_screen_idx + 1) % len(screens)
+    elif direction == "prev":
+        current_screen_idx = (current_screen_idx - 1) % len(screens)
     lv.screen_load(screens[current_screen_idx])
 
 def check_gesture(*args):
+    global last_swipe_time
     coords = touch._get_coords()
+    now = time.ticks_ms()
     if coords is not None:
         gesture = touch.get_gesture()
-        if gesture in (GESTURE_SWIPE_LEFT, GESTURE_SWIPE_RIGHT):
-            switch_screen()
-            #touch._last_gesture = GESTURE_NONE  # Reset after handling
-
+        if gesture == GESTURE_SWIPE_RIGHT and time.ticks_diff(now, last_swipe_time) > swipe_cooldown:
+            switch_screen("next")
+            last_swipe_time = now
+        elif gesture == GESTURE_SWIPE_LEFT and time.ticks_diff(now, last_swipe_time) > swipe_cooldown:
+            switch_screen("prev")
+            last_swipe_time = now
 # ===== UI HELPER FUNCTIONS =====
 def SetFlag(obj, flag, value):
     if value:
