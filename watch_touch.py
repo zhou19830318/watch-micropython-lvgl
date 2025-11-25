@@ -20,8 +20,8 @@ import gc9a01
 from cst816s import CST816S, GESTURE_SWIPE_LEFT, GESTURE_SWIPE_RIGHT
 
 # ===== CONFIGURATION =====
-SSID = "Prefoco"
-PASSWORD = "18961210318" 
+SSID = "xxx"
+PASSWORD = "xxx" 
 city = "changzhou"
 weather_url = f"https://api.seniverse.com/v3/weather/now.json?key=S9hoa4Wza9Hcs2uX_&location={city}&language=zh-Hans&unit=c"
 
